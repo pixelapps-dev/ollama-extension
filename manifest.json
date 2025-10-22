@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "AI Chat Assistant",
   "description": "Multi-provider AI chat extension with page context support for Ollama and OpenRouter",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "action": {
     "default_title": "AI Chat Assistant"
   },
