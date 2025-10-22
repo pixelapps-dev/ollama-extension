@@ -5,7 +5,8 @@
 
 import { configureMarked, renderMarkdown, enhanceCodeBlocks, estimateTokens } from '../utils/markdown.js';
 import { formatError, logError } from '../utils/errors.js';
-import { PROVIDERS, SHORTCUTS } from '../utils/constants.js';
+import { PROVIDERS, SHORTCUTS, PROMPT_TEMPLATES } from '../utils/constants.js';
+import { initializeTheme, applyTheme, applyFontSize, applyCompactMode } from '../utils/themes.js';
 import { getSettings, saveSettings, updateSetting, getSetting } from '../services/storage.js';
 import {
   createConversation,
@@ -43,6 +44,9 @@ const state = {
 async function initialize() {
   console.log('Initializing AI Chat Assistant...');
 
+  // Initialize theme system
+  initializeTheme();
+
   // Configure markdown renderer
   configureMarked();
 
@@ -51,6 +55,9 @@ async function initialize() {
 
   // Setup UI event listeners
   setupEventListeners();
+
+  // Populate prompt templates
+  populatePromptTemplates();
 
   // Load active conversation or create new one
   loadActiveConversation();
@@ -90,6 +97,15 @@ function setupEventListeners() {
   document.getElementById('top-p-slider').addEventListener('input', handleTopPChange);
   document.getElementById('max-tokens-input').addEventListener('change', handleMaxTokensChange);
   document.getElementById('system-prompt-input').addEventListener('change', handleSystemPromptChange);
+  document.getElementById('prompt-template-select').addEventListener('change', handlePromptTemplateChange);
+
+  // Appearance settings
+  document.getElementById('theme-select').addEventListener('change', handleThemeChange);
+  document.getElementById('font-size-select').addEventListener('change', handleFontSizeChange);
+  document.getElementById('open-mode-select').addEventListener('change', handleOpenModeChange);
+  document.getElementById('compact-mode-check').addEventListener('change', handleCompactModeChange);
+  document.getElementById('show-token-count-check').addEventListener('change', handleTokenCountToggle);
+  document.getElementById('show-performance-check').addEventListener('change', handlePerformanceToggle);
 
   // Chat
   document.getElementById('send-button').addEventListener('click', handleSendMessage);
@@ -498,9 +514,20 @@ function updateUIFromSettings() {
   document.getElementById('max-tokens-input').value = settings.model.maxTokens;
   document.getElementById('system-prompt-input').value = settings.model.systemPrompt || '';
 
+  // Appearance settings
+  document.getElementById('theme-select').value = settings.ui.theme || 'dark';
+  document.getElementById('font-size-select').value = settings.ui.fontSize || 'medium';
+  document.getElementById('open-mode-select').value = settings.ui.openMode || 'sidepanel';
+  document.getElementById('compact-mode-check').checked = settings.ui.compactMode || false;
+  document.getElementById('show-token-count-check').checked = settings.ui.showTokenCount !== false;
+  document.getElementById('show-performance-check').checked = settings.ui.showPerformanceMetrics || false;
+
   // Update header badges
   updateProviderBadge();
   updateModelBadge();
+
+  // Update token count display
+  updateTokenCountDisplay();
 }
 
 /**
@@ -653,6 +680,104 @@ function handleMaxTokensChange(e) {
  */
 function handleSystemPromptChange(e) {
   updateSetting('model.systemPrompt', e.target.value);
+}
+
+/**
+ * Handle prompt template selection
+ */
+function handlePromptTemplateChange(e) {
+  const templateId = e.target.value;
+  if (!templateId) return;
+
+  const template = PROMPT_TEMPLATES.find(t => t.id === templateId);
+  if (template) {
+    document.getElementById('system-prompt-input').value = template.prompt;
+    updateSetting('model.systemPrompt', template.prompt);
+  }
+
+  // Reset selector
+  e.target.value = '';
+}
+
+/**
+ * Populate prompt template dropdown
+ */
+function populatePromptTemplates() {
+  const select = document.getElementById('prompt-template-select');
+  select.innerHTML = '<option value="">Quick Templates...</option>';
+
+  PROMPT_TEMPLATES.forEach(template => {
+    const option = document.createElement('option');
+    option.value = template.id;
+    option.textContent = template.name;
+    option.title = template.description;
+    select.appendChild(option);
+  });
+}
+
+/**
+ * Handle theme change
+ */
+function handleThemeChange(e) {
+  const theme = e.target.value;
+  applyTheme(theme);
+}
+
+/**
+ * Handle font size change
+ */
+function handleFontSizeChange(e) {
+  const fontSize = e.target.value;
+  applyFontSize(fontSize);
+}
+
+/**
+ * Handle open mode change
+ */
+function handleOpenModeChange(e) {
+  const openMode = e.target.value;
+  updateSetting('ui.openMode', openMode);
+
+  // Also update chrome.storage.local for background script
+  if (typeof chrome !== 'undefined' && chrome.storage) {
+    chrome.storage.local.set({ openMode });
+  }
+}
+
+/**
+ * Handle compact mode toggle
+ */
+function handleCompactModeChange(e) {
+  const enabled = e.target.checked;
+  applyCompactMode(enabled);
+}
+
+/**
+ * Handle token count toggle
+ */
+function handleTokenCountToggle(e) {
+  const enabled = e.target.checked;
+  updateSetting('ui.showTokenCount', enabled);
+  updateTokenCountDisplay();
+}
+
+/**
+ * Handle performance metrics toggle
+ */
+function handlePerformanceToggle(e) {
+  const enabled = e.target.checked;
+  updateSetting('ui.showPerformanceMetrics', enabled);
+}
+
+/**
+ * Update token count display visibility
+ */
+function updateTokenCountDisplay() {
+  const show = getSetting('ui.showTokenCount', true);
+  const charCount = document.getElementById('char-count');
+  if (charCount) {
+    charCount.style.display = show ? 'inline' : 'none';
+  }
 }
 
 /**

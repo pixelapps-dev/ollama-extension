@@ -3,12 +3,29 @@
  * Handles extension icon clicks and initialization
  */
 
-// Handle extension icon click
-chrome.action.onClicked.addListener((tab) => {
-  // Open the chat interface in a new tab
-  chrome.tabs.create({
-    url: chrome.runtime.getURL('index.html')
-  });
+// Handle extension icon click - open side panel by default
+chrome.action.onClicked.addListener(async (tab) => {
+  // Get user preference for opening mode
+  const result = await chrome.storage.local.get(['openMode']);
+  const openMode = result.openMode || 'sidepanel'; // default to side panel
+
+  if (openMode === 'sidepanel') {
+    // Open in side panel (Chrome 114+)
+    try {
+      await chrome.sidePanel.open({ windowId: tab.windowId });
+    } catch (error) {
+      console.error('Side panel not supported, opening in tab:', error);
+      // Fallback to tab if side panel not supported
+      chrome.tabs.create({
+        url: chrome.runtime.getURL('index.html')
+      });
+    }
+  } else {
+    // Open in new tab
+    chrome.tabs.create({
+      url: chrome.runtime.getURL('index.html')
+    });
+  }
 });
 
 // Initialize extension

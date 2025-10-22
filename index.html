@@ -15,10 +15,11 @@
         crossorigin="anonymous"></script>
     <script src="resources/purify.min.js" integrity="sha256-QigBQMy2be3IqJD2ezKJUJ5gycSmyYlRHj2VGBuITpU="
         crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="src/styles/themes.css">
     <link rel="stylesheet" href="src/styles/main.css">
 </head>
 
-<body data-bs-theme="dark">
+<body>
     <!-- Main Container -->
     <div class="app-container">
         <!-- Sidebar for Conversations -->
@@ -204,9 +205,68 @@
                 <!-- System Prompt -->
                 <div class="settings-section">
                     <h6>System Prompt</h6>
+                    <div class="mb-2">
+                        <select id="prompt-template-select" class="form-select form-select-sm">
+                            <option value="">Quick Templates...</option>
+                        </select>
+                    </div>
                     <textarea id="system-prompt-input" class="form-control" rows="4"
                         placeholder="You are a helpful assistant..."></textarea>
                     <div class="form-text">Optional instructions for the AI</div>
+                </div>
+
+                <!-- Appearance Settings -->
+                <div class="settings-section">
+                    <h6>Appearance</h6>
+
+                    <div class="mb-3">
+                        <label for="theme-select" class="form-label">Theme</label>
+                        <select id="theme-select" class="form-select">
+                            <option value="dark">Dark</option>
+                            <option value="light">Light</option>
+                            <option value="monochrome">Monochrome</option>
+                            <option value="high-contrast">High Contrast</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="font-size-select" class="form-label">Font Size</label>
+                        <select id="font-size-select" class="form-select">
+                            <option value="small">Small</option>
+                            <option value="medium">Medium</option>
+                            <option value="large">Large</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="open-mode-select" class="form-label">Open Mode</label>
+                        <select id="open-mode-select" class="form-select">
+                            <option value="sidepanel">Side Panel (Stay on page)</option>
+                            <option value="tab">New Tab</option>
+                        </select>
+                        <div class="form-text">How to open the chat interface</div>
+                    </div>
+
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="compact-mode-check">
+                        <label class="form-check-label" for="compact-mode-check">
+                            Compact Mode
+                        </label>
+                    </div>
+
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="show-token-count-check" checked>
+                        <label class="form-check-label" for="show-token-count-check">
+                            Show Token Count
+                        </label>
+                    </div>
+
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="show-performance-check">
+                        <label class="form-check-label" for="show-performance-check">
+                            Show Performance Metrics
+                        </label>
+                    </div>
                 </div>
 
                 <!-- Data Management -->

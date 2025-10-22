@@ -1,0 +1,296 @@
+/**
+ * Theme Definitions
+ * Multiple themes using CSS custom properties
+ */
+
+/* Base theme variables structure */
+:root {
+  /* Spacing */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+
+  /* Border radius */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+
+  /* Transitions */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.3s ease;
+
+  /* Font sizes */
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+}
+
+/* Dark Theme (Default) */
+[data-theme="dark"],
+:root {
+  /* Primary colors */
+  --color-primary: #0d6efd;
+  --color-primary-hover: #0a58ca;
+  --color-secondary: #6c757d;
+  --color-success: #198754;
+  --color-danger: #dc3545;
+  --color-warning: #ffc107;
+  --color-info: #0dcaf0;
+
+  /* Background colors */
+  --bg-primary: #212529;
+  --bg-secondary: #1a1d20;
+  --bg-tertiary: #2c3034;
+  --bg-elevated: #343a40;
+  --bg-overlay: rgba(0, 0, 0, 0.7);
+
+  /* Message backgrounds */
+  --bg-message-user: #0d6efd;
+  --bg-message-assistant: #3e3e3e;
+  --bg-message-system: #495057;
+
+  /* Text colors */
+  --text-primary: #f8f9fa;
+  --text-secondary: #adb5bd;
+  --text-tertiary: #6c757d;
+  --text-inverse: #212529;
+
+  /* Border colors */
+  --border-primary: #495057;
+  --border-secondary: #343a40;
+  --border-accent: var(--color-primary);
+
+  /* Input colors */
+  --input-bg: #2c3034;
+  --input-border: #495057;
+  --input-focus-border: var(--color-primary);
+  --input-text: var(--text-primary);
+
+  /* Scrollbar */
+  --scrollbar-track: var(--bg-secondary);
+  --scrollbar-thumb: var(--border-primary);
+  --scrollbar-thumb-hover: var(--color-secondary);
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.5);
+
+  /* Code blocks */
+  --code-bg: #1a1d20;
+  --code-border: #343a40;
+}
+
+/* Light Theme */
+[data-theme="light"] {
+  /* Primary colors */
+  --color-primary: #0d6efd;
+  --color-primary-hover: #0a58ca;
+  --color-secondary: #6c757d;
+  --color-success: #198754;
+  --color-danger: #dc3545;
+  --color-warning: #ffc107;
+  --color-info: #0dcaf0;
+
+  /* Background colors */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8f9fa;
+  --bg-tertiary: #e9ecef;
+  --bg-elevated: #ffffff;
+  --bg-overlay: rgba(0, 0, 0, 0.5);
+
+  /* Message backgrounds */
+  --bg-message-user: #0d6efd;
+  --bg-message-assistant: #f8f9fa;
+  --bg-message-system: #e9ecef;
+
+  /* Text colors */
+  --text-primary: #212529;
+  --text-secondary: #6c757d;
+  --text-tertiary: #adb5bd;
+  --text-inverse: #ffffff;
+
+  /* Border colors */
+  --border-primary: #dee2e6;
+  --border-secondary: #e9ecef;
+  --border-accent: var(--color-primary);
+
+  /* Input colors */
+  --input-bg: #ffffff;
+  --input-border: #dee2e6;
+  --input-focus-border: var(--color-primary);
+  --input-text: var(--text-primary);
+
+  /* Scrollbar */
+  --scrollbar-track: var(--bg-secondary);
+  --scrollbar-thumb: var(--border-primary);
+  --scrollbar-thumb-hover: var(--color-secondary);
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.15);
+
+  /* Code blocks */
+  --code-bg: #f8f9fa;
+  --code-border: #dee2e6;
+}
+
+/* Monochrome Theme */
+[data-theme="monochrome"] {
+  /* Primary colors (grayscale) */
+  --color-primary: #000000;
+  --color-primary-hover: #333333;
+  --color-secondary: #666666;
+  --color-success: #000000;
+  --color-danger: #000000;
+  --color-warning: #000000;
+  --color-info: #000000;
+
+  /* Background colors */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f5f5f5;
+  --bg-tertiary: #e0e0e0;
+  --bg-elevated: #ffffff;
+  --bg-overlay: rgba(0, 0, 0, 0.7);
+
+  /* Message backgrounds */
+  --bg-message-user: #333333;
+  --bg-message-assistant: #f5f5f5;
+  --bg-message-system: #e0e0e0;
+
+  /* Text colors */
+  --text-primary: #000000;
+  --text-secondary: #666666;
+  --text-tertiary: #999999;
+  --text-inverse: #ffffff;
+
+  /* Border colors */
+  --border-primary: #cccccc;
+  --border-secondary: #e0e0e0;
+  --border-accent: #000000;
+
+  /* Input colors */
+  --input-bg: #ffffff;
+  --input-border: #cccccc;
+  --input-focus-border: #000000;
+  --input-text: #000000;
+
+  /* Scrollbar */
+  --scrollbar-track: #f5f5f5;
+  --scrollbar-thumb: #cccccc;
+  --scrollbar-thumb-hover: #999999;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.15);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.2);
+
+  /* Code blocks */
+  --code-bg: #f5f5f5;
+  --code-border: #cccccc;
+}
+
+/* High Contrast Theme (Accessibility) */
+[data-theme="high-contrast"] {
+  /* Primary colors */
+  --color-primary: #0000ff;
+  --color-primary-hover: #0000cc;
+  --color-secondary: #808080;
+  --color-success: #008000;
+  --color-danger: #ff0000;
+  --color-warning: #ffff00;
+  --color-info: #00ffff;
+
+  /* Background colors */
+  --bg-primary: #000000;
+  --bg-secondary: #1a1a1a;
+  --bg-tertiary: #333333;
+  --bg-elevated: #1a1a1a;
+  --bg-overlay: rgba(0, 0, 0, 0.9);
+
+  /* Message backgrounds */
+  --bg-message-user: #0000ff;
+  --bg-message-assistant: #1a1a1a;
+  --bg-message-system: #333333;
+
+  /* Text colors */
+  --text-primary: #ffffff;
+  --text-secondary: #e0e0e0;
+  --text-tertiary: #b0b0b0;
+  --text-inverse: #000000;
+
+  /* Border colors */
+  --border-primary: #ffffff;
+  --border-secondary: #808080;
+  --border-accent: #ffff00;
+
+  /* Input colors */
+  --input-bg: #000000;
+  --input-border: #ffffff;
+  --input-focus-border: #ffff00;
+  --input-text: #ffffff;
+
+  /* Scrollbar */
+  --scrollbar-track: #000000;
+  --scrollbar-thumb: #ffffff;
+  --scrollbar-thumb-hover: #ffff00;
+
+  /* Shadows */
+  --shadow-sm: 0 0 2px rgba(255, 255, 255, 0.5);
+  --shadow-md: 0 0 6px rgba(255, 255, 255, 0.5);
+  --shadow-lg: 0 0 15px rgba(255, 255, 255, 0.5);
+
+  /* Code blocks */
+  --code-bg: #1a1a1a;
+  --code-border: #ffffff;
+}
+
+/* Font Size Variants */
+[data-font-size="small"] {
+  --font-size-xs: 0.625rem;
+  --font-size-sm: 0.75rem;
+  --font-size-base: 0.875rem;
+  --font-size-lg: 1rem;
+  --font-size-xl: 1.125rem;
+}
+
+[data-font-size="large"] {
+  --font-size-xs: 0.875rem;
+  --font-size-sm: 1rem;
+  --font-size-base: 1.125rem;
+  --font-size-lg: 1.25rem;
+  --font-size-xl: 1.5rem;
+}
+
+/* Compact Mode */
+[data-compact="true"] {
+  --spacing-xs: 0.125rem;
+  --spacing-sm: 0.25rem;
+  --spacing-md: 0.5rem;
+  --spacing-lg: 0.75rem;
+  --spacing-xl: 1rem;
+}
+
+/* Reduced Motion (Accessibility) */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* High Contrast Mode (OS-level) */
+@media (prefers-contrast: high) {
+  :root {
+    --border-primary: currentColor;
+    --shadow-sm: none;
+    --shadow-md: none;
+    --shadow-lg: none;
+  }
+}

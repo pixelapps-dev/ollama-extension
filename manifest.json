@@ -6,11 +6,15 @@
   "action": {
     "default_title": "AI Chat Assistant"
   },
+  "side_panel": {
+    "default_path": "index.html"
+  },
   "permissions": [
     "declarativeNetRequest",
     "activeTab",
     "scripting",
-    "storage"
+    "storage",
+    "sidePanel"
   ],
   "host_permissions": [
     "http://*:11434/*",
