@@ -17,6 +17,33 @@ import {
   copyToClipboard,
   downloadAsFile
 } from '../utils/ui.js';
+import {
+  needsOnboarding,
+  showWelcomeScreen,
+  showKeyboardShortcuts,
+  showContextualTip,
+  completeOnboarding
+} from '../utils/onboarding.js';
+import {
+  initializeKeyboardShortcuts,
+  registerDefaultShortcuts
+} from '../utils/keyboard.js';
+import {
+  createChatEmptyState,
+  createConversationListEmptyState,
+  createNoSearchResultsState,
+  createErrorState,
+  createConnectionErrorState,
+  createModelLoadingErrorState,
+  createNoModelSelectedState,
+  createConversationSkeleton,
+  createMessageSkeleton
+} from '../utils/states.js';
+import {
+  createMessageActions,
+  enableMessageEditing,
+  showMessageContextMenu
+} from '../utils/message-actions.js';
 import { getSettings, saveSettings, updateSetting, getSetting } from '../services/storage.js';
 import {
   createConversation,
@@ -93,6 +120,18 @@ async function initialize() {
   // Setup performance metrics visibility
   updatePerformanceDisplay();
 
+  // Initialize keyboard shortcuts
+  initializeKeyboardShortcuts();
+  registerDefaultShortcuts();
+
+  // Check for pending prompts/context from background.js (context menu)
+  await handlePendingActions();
+
+  // Show onboarding for first-time users
+  if (needsOnboarding()) {
+    setTimeout(() => showWelcomeScreen(), 1000);
+  }
+
   console.log('Application initialized');
 }
 
@@ -160,31 +199,48 @@ function loadActiveConversation() {
  */
 function displayConversation(conversation) {
   const chatHistory = document.getElementById('chat-history');
-  const emptyState = document.getElementById('empty-state');
+  const emptyStateOld = document.getElementById('empty-state');
 
   if (!conversation || conversation.messages.length === 0) {
-    emptyState.style.display = 'block';
+    // Hide old empty state
+    if (emptyStateOld) emptyStateOld.style.display = 'none';
+
+    // Create and show enhanced empty state
+    chatHistory.innerHTML = '';
+    const enhancedEmpty = createChatEmptyState();
+    chatHistory.appendChild(enhancedEmpty);
+
+    // Attach event listeners to empty state buttons
+    attachEmptyStateListeners();
     return;
   }
 
-  emptyState.style.display = 'none';
+  // Hide old empty state
+  if (emptyStateOld) emptyStateOld.style.display = 'none';
+
   chatHistory.innerHTML = '';
 
-  conversation.messages.forEach(message => {
-    appendMessage(message.role, message.content, false);
+  conversation.messages.forEach((message, index) => {
+    appendMessage(message.role, message.content, false, index);
   });
 }
 
 /**
  * Append a message to the chat
  */
-function appendMessage(role, content, isNew = true) {
+function appendMessage(role, content, isNew = true, messageIndex = -1) {
   const chatHistory = document.getElementById('chat-history');
   const emptyState = document.getElementById('empty-state');
-  emptyState.style.display = 'none';
+  const emptyStateOld = document.getElementById('empty-state');
+  if (emptyStateOld) emptyStateOld.style.display = 'none';
+
+  // Remove enhanced empty state if present
+  const enhancedEmpty = chatHistory.querySelector('.empty-state-enhanced');
+  if (enhancedEmpty) enhancedEmpty.remove();
 
   const messageDiv = document.createElement('div');
   messageDiv.className = `message ${role}`;
+  messageDiv.setAttribute('data-message-index', messageIndex);
 
   const headerDiv = document.createElement('div');
   headerDiv.className = 'message-header';
@@ -200,19 +256,18 @@ function appendMessage(role, content, isNew = true) {
     contentDiv.textContent = content;
   }
 
-  const actionsDiv = document.createElement('div');
-  actionsDiv.className = 'message-actions';
-
-  const copyBtn = document.createElement('button');
-  copyBtn.className = 'btn btn-sm btn-outline-secondary';
-  copyBtn.innerHTML = '📋';
-  copyBtn.title = 'Copy';
-  copyBtn.onclick = () => copyToClipboard(content);
-  actionsDiv.appendChild(copyBtn);
+  // Create enhanced message actions
+  const message = { role, content };
+  const actionsDiv = createMessageActions(message, messageIndex, handleMessageAction);
 
   messageDiv.appendChild(headerDiv);
   messageDiv.appendChild(contentDiv);
   messageDiv.appendChild(actionsDiv);
+
+  // Add right-click context menu
+  messageDiv.addEventListener('contextmenu', (e) => {
+    showMessageContextMenu(e, message, messageIndex, handleMessageAction);
+  });
 
   chatHistory.appendChild(messageDiv);
 
@@ -399,7 +454,7 @@ function updateConversationList() {
   listContainer.innerHTML = '';
 
   if (conversations.length === 0) {
-    listContainer.innerHTML = '<p class="text-muted text-center p-3">No conversations yet</p>';
+    listContainer.innerHTML = createConversationListEmptyState();
     return;
   }
 
@@ -476,7 +531,7 @@ function handleConversationSearch(e) {
   listContainer.innerHTML = '';
 
   if (results.length === 0) {
-    listContainer.innerHTML = '<p class="text-muted text-center p-3">No matches found</p>';
+    listContainer.innerHTML = createNoSearchResultsState(query);
     return;
   }
 
@@ -1096,6 +1151,129 @@ function showConversationContextMenuHandler(e, convId) {
   ];
 
   showContextMenu(e.clientX, e.clientY, items);
+}
+
+/**
+ * Handle pending actions from background.js (context menu, etc.)
+ */
+async function handlePendingActions() {
+  try {
+    const pending = await chrome.storage.local.get(['pendingPrompt', 'pendingContext']);
+
+    if (pending.pendingContext) {
+      state.pageContext = pending.pendingContext;
+      document.getElementById('page-context-badge').style.display = 'block';
+      await chrome.storage.local.remove('pendingContext');
+    }
+
+    if (pending.pendingPrompt) {
+      // Set the prompt in the input
+      const input = document.getElementById('user-input');
+      if (input) {
+        input.value = pending.pendingPrompt;
+        input.focus();
+        updateCharCount();
+      }
+      await chrome.storage.local.remove('pendingPrompt');
+    }
+  } catch (error) {
+    console.log('No pending actions or not in extension context');
+  }
+}
+
+/**
+ * Attach event listeners to empty state buttons
+ */
+function attachEmptyStateListeners() {
+  const emptyAddContextBtn = document.getElementById('empty-add-context-btn');
+  const emptyBrowseTemplatesBtn = document.getElementById('empty-browse-templates-btn');
+  const emptyShortcutsBtn = document.getElementById('empty-shortcuts-btn');
+
+  if (emptyAddContextBtn) {
+    emptyAddContextBtn.addEventListener('click', () => {
+      document.getElementById('page-context-btn').click();
+    });
+  }
+
+  if (emptyBrowseTemplatesBtn) {
+    emptyBrowseTemplatesBtn.addEventListener('click', () => {
+      document.getElementById('settings-btn').click();
+      setTimeout(() => {
+        const templateSelect = document.getElementById('prompt-template-select');
+        if (templateSelect) {
+          templateSelect.scrollIntoView({ behavior: 'smooth' });
+          templateSelect.focus();
+        }
+      }, 300);
+    });
+  }
+
+  if (emptyShortcutsBtn) {
+    emptyShortcutsBtn.addEventListener('click', () => {
+      showKeyboardShortcuts();
+    });
+  }
+
+  // Attach suggestion chip listeners
+  const suggestionChips = document.querySelectorAll('.suggestion-chip');
+  suggestionChips.forEach(chip => {
+    chip.addEventListener('click', () => {
+      const prompt = chip.getAttribute('data-prompt');
+      if (prompt) {
+        const input = document.getElementById('user-input');
+        if (input) {
+          input.value = prompt;
+          input.focus();
+          updateCharCount();
+        }
+      }
+    });
+  });
+}
+
+/**
+ * Handle message actions (edit, regenerate, delete)
+ */
+function handleMessageAction(action, data) {
+  const { message, messageIndex } = data;
+
+  switch (action) {
+    case 'edit':
+      // Find the message element
+      const messageElement = document.querySelector(`[data-message-index="${messageIndex}"]`);
+      if (messageElement) {
+        enableMessageEditing(messageElement, message, (updatedMessage) => {
+          // Update in conversation
+          if (state.currentConversation && state.currentConversation.messages[messageIndex]) {
+            state.currentConversation.messages[messageIndex] = updatedMessage;
+            // Save conversation (implementation depends on your storage system)
+            showToast('Message updated', 'success');
+          }
+        });
+      }
+      break;
+
+    case 'regenerate':
+      // Remove the assistant message and regenerate
+      if (state.currentConversation && state.currentConversation.messages[messageIndex]) {
+        // Remove this message and any following messages
+        state.currentConversation.messages = state.currentConversation.messages.slice(0, messageIndex);
+        // Redisplay conversation
+        displayConversation(state.currentConversation);
+        // Trigger regeneration
+        generateAIResponse();
+      }
+      break;
+
+    case 'delete':
+      // Remove the message
+      if (state.currentConversation && state.currentConversation.messages[messageIndex]) {
+        state.currentConversation.messages.splice(messageIndex, 1);
+        displayConversation(state.currentConversation);
+        showToast('Message deleted', 'info');
+      }
+      break;
+  }
 }
 
 // Initialize app when DOM is ready
