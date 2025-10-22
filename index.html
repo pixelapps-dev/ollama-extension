@@ -116,6 +116,16 @@
                     <div class="input-controls">
                         <div class="input-info">
                             <span id="char-count" class="text-muted small">0 chars</span>
+                            <span id="performance-stats" class="performance-stats" style="display: none;">
+                                <span class="stat-item">
+                                    <span class="stat-label">Speed:</span>
+                                    <span class="stat-value" id="tokens-per-sec">-- t/s</span>
+                                </span>
+                                <span class="stat-item">
+                                    <span class="stat-label">Time:</span>
+                                    <span class="stat-value" id="response-time">--</span>
+                                </span>
+                            </span>
                         </div>
                         <button id="send-button" class="btn btn-primary">
                             Send

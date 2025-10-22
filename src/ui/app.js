@@ -5,8 +5,18 @@
 
 import { configureMarked, renderMarkdown, enhanceCodeBlocks, estimateTokens } from '../utils/markdown.js';
 import { formatError, logError } from '../utils/errors.js';
-import { PROVIDERS, SHORTCUTS, PROMPT_TEMPLATES } from '../utils/constants.js';
+import { PROVIDERS, SHORTCUTS, PROMPT_TEMPLATES, MESSAGE_ACTIONS } from '../utils/constants.js';
 import { initializeTheme, applyTheme, applyFontSize, applyCompactMode } from '../utils/themes.js';
+import {
+  setupAutoExpandTextarea,
+  showToast,
+  showContextMenu,
+  createSkeleton,
+  formatDuration,
+  calculateTokensPerSecond,
+  copyToClipboard,
+  downloadAsFile
+} from '../utils/ui.js';
 import { getSettings, saveSettings, updateSetting, getSetting } from '../services/storage.js';
 import {
   createConversation,
@@ -35,7 +45,12 @@ const state = {
   isGenerating: false,
   pageContext: null,
   abortController: null,
-  settings: null
+  settings: null,
+  performanceMetrics: {
+    startTime: null,
+    tokensGenerated: 0,
+    lastTokenTime: null
+  }
 };
 
 /**
@@ -70,6 +85,13 @@ async function initialize() {
 
   // Update UI with current settings
   updateUIFromSettings();
+
+  // Setup auto-expanding textarea
+  const textarea = document.getElementById('user-input');
+  setupAutoExpandTextarea(textarea);
+
+  // Setup performance metrics visibility
+  updatePerformanceDisplay();
 
   console.log('Application initialized');
 }
@@ -403,8 +425,7 @@ function updateConversationList() {
 
     // Right-click context menu
     item.addEventListener('contextmenu', (e) => {
-      e.preventDefault();
-      showConversationContextMenu(e, conv.id);
+      showConversationContextMenuHandler(e, conv.id);
     });
 
     listContainer.appendChild(item);
@@ -915,12 +936,15 @@ function handleClearData() {
 }
 
 /**
- * Utility: Copy text to clipboard
+ * Utility: Copy text to clipboard with toast notification
  */
-function copyToClipboard(text) {
-  navigator.clipboard.writeText(text)
-    .then(() => showSuccess('Copied to clipboard!'))
-    .catch(err => showError('Failed to copy'));
+async function copyText(text) {
+  const success = await copyToClipboard(text);
+  if (success) {
+    showToast('Copied to clipboard!', 'success');
+  } else {
+    showToast('Failed to copy', 'error');
+  }
 }
 
 /**
@@ -957,6 +981,121 @@ function formatTime(timestamp) {
   if (diffDays < 7) return `${diffDays}d ago`;
 
   return date.toLocaleDateString();
+}
+
+/**
+ * Update performance metrics display
+ */
+function updatePerformanceDisplay() {
+  const show = getSetting('ui.showPerformanceMetrics', false);
+  const perfStats = document.getElementById('performance-stats');
+  if (perfStats) {
+    perfStats.style.display = show ? 'inline-flex' : 'none';
+  }
+}
+
+/**
+ * Update performance metrics during generation
+ */
+function updatePerformanceMetrics() {
+  if (!state.performanceMetrics.startTime) return;
+
+  const elapsed = Date.now() - state.performanceMetrics.startTime;
+  const tokensPerSec = calculateTokensPerSecond(state.performanceMetrics.tokensGenerated, elapsed);
+
+  const tokensPerSecEl = document.getElementById('tokens-per-sec');
+  const responseTimeEl = document.getElementById('response-time');
+
+  if (tokensPerSecEl) {
+    tokensPerSecEl.textContent = `${tokensPerSec} t/s`;
+  }
+  if (responseTimeEl) {
+    responseTimeEl.textContent = formatDuration(elapsed);
+  }
+}
+
+/**
+ * Reset performance metrics
+ */
+function resetPerformanceMetrics() {
+  state.performanceMetrics = {
+    startTime: null,
+    tokensGenerated: 0,
+    lastTokenTime: null
+  };
+}
+
+/**
+ * Show conversation context menu
+ */
+function showConversationContextMenuHandler(e, convId) {
+  e.preventDefault();
+
+  const items = [
+    {
+      label: 'Open',
+      icon: '📂',
+      action: () => loadConversation(convId)
+    },
+    {
+      label: 'Rename',
+      icon: '✏️',
+      action: () => {
+        const conv = getAllConversations().find(c => c.id === convId);
+        if (conv) {
+          const newTitle = prompt('Enter new title:', conv.title);
+          if (newTitle && newTitle.trim()) {
+            updateConversationTitle(convId, newTitle.trim());
+            updateConversationList();
+            if (state.currentConversation?.id === convId) {
+              document.getElementById('conversation-title').textContent = newTitle.trim();
+            }
+          }
+        }
+      }
+    },
+    { divider: true },
+    {
+      label: 'Export as JSON',
+      icon: '💾',
+      action: () => {
+        const json = exportConversationJSON(convId);
+        const conv = getAllConversations().find(c => c.id === convId);
+        downloadAsFile(json, `${conv.title}.json`, 'application/json');
+        showToast('Conversation exported as JSON', 'success');
+      }
+    },
+    {
+      label: 'Export as Markdown',
+      icon: '📝',
+      action: () => {
+        const md = exportConversationMarkdown(convId);
+        const conv = getAllConversations().find(c => c.id === convId);
+        downloadAsFile(md, `${conv.title}.md`, 'text/markdown');
+        showToast('Conversation exported as Markdown', 'success');
+      }
+    },
+    { divider: true },
+    {
+      label: 'Delete',
+      icon: '🗑️',
+      danger: true,
+      action: () => {
+        const conv = getAllConversations().find(c => c.id === convId);
+        if (confirm(`Delete "${conv.title}"?`)) {
+          deleteConversation(convId);
+          updateConversationList();
+          showToast('Conversation deleted', 'info');
+
+          if (state.currentConversation?.id === convId) {
+            handleNewChat();
+          }
+        }
+      }
+    }
+  ];
+
+  showContextMenu(e.clientX, e.clientY, items);
 }
 
 // Initialize app when DOM is ready
