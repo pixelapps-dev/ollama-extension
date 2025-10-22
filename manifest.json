@@ -1,21 +1,32 @@
 {
   "manifest_version": 3,
-  "name": "ollama-ui",
-  "description": "This extension hosts an ollama-ui web server on localhost",
-  "version": "1.6",
-  "action": {},
+  "name": "AI Chat Assistant",
+  "description": "Multi-provider AI chat extension with page context support for Ollama and OpenRouter",
+  "version": "2.0.0",
+  "action": {
+    "default_title": "AI Chat Assistant"
+  },
   "permissions": [
-    "declarativeNetRequest"
+    "declarativeNetRequest",
+    "activeTab",
+    "scripting",
+    "storage"
   ],
   "host_permissions": [
-    "http://*:11434/api/tags",
-    "http://*:11434/api/generate",
-    "https://*:11434/api/tags",
-    "https://*:11434/api/generate"
+    "http://*:11434/*",
+    "https://*:11434/*",
+    "https://openrouter.ai/*"
   ],
   "background": {
     "service_worker": "background.js"
   },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["src/content/page-extractor.js"],
+      "run_at": "document_idle"
+    }
+  ],
   "icons": {
     "16": "icon16.png",
     "32": "icon32.png",

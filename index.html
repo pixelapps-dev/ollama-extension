@@ -1,8 +1,9 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
-    <title>Chat with Llama2</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chat Assistant</title>
     <link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
     <link href="resources/bootstrap.min.css" rel="stylesheet"
         integrity="sha384-4bw+/aepP/YC94hEpVNVgiZdgIC5+VKNBQNGCHeKRQN+PtmoHDEXuppvnDJzQIu9" crossorigin="anonymous">
@@ -14,95 +15,262 @@
         crossorigin="anonymous"></script>
     <script src="resources/purify.min.js" integrity="sha256-QigBQMy2be3IqJD2ezKJUJ5gycSmyYlRHj2VGBuITpU="
         crossorigin="anonymous"></script>
-    <link rel="stylesheet" href="chat.css">
+    <link rel="stylesheet" href="src/styles/main.css">
 </head>
 
 <body data-bs-theme="dark">
-    <div class="container">
-        <div class="row pt-3">
-            <div class="col-md-8 col-12">
-                <h1>Chat with Ollama</h1>
+    <!-- Main Container -->
+    <div class="app-container">
+        <!-- Sidebar for Conversations -->
+        <aside id="sidebar" class="sidebar">
+            <div class="sidebar-header">
+                <h5>Conversations</h5>
+                <button id="new-chat-btn" class="btn btn-primary btn-sm" title="New Chat">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
+                    </svg>
+                </button>
             </div>
-            <div id="model-controls" class="col-md-4 col-12 text-md-end text-start mb-3">
-                <div class="d-flex flex-column align-items-md-end align-items-start">
 
-                    <div id="host-address-select">
-                        <div class="d-flex align-items-center mb-2">
-                            <label for="host-address" class="form-label me-2" style="font-size: smaller;">Hostname</label>
-                            <input id="host-address" class="form-control" type="text" placeholder="http://localhost:11434" style="width: auto;"></select>
+            <div class="sidebar-search">
+                <input type="text" id="conversation-search" class="form-control form-control-sm" placeholder="Search conversations...">
+            </div>
+
+            <div id="conversation-list" class="conversation-list">
+                <!-- Conversations will be dynamically added here -->
+            </div>
+
+            <div class="sidebar-footer">
+                <button id="settings-btn" class="btn btn-secondary btn-sm w-100">
+                    ⚙️ Settings
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Chat Area -->
+        <main class="chat-main">
+            <!-- Header -->
+            <header class="chat-header">
+                <button id="toggle-sidebar-btn" class="btn btn-secondary btn-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                        <path fill-rule="evenodd" d="M2.5 12a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5z"/>
+                    </svg>
+                </button>
+
+                <div class="chat-title-container">
+                    <h1 id="conversation-title" class="chat-title">New Chat</h1>
+                    <button id="edit-title-btn" class="btn btn-link btn-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168l10-10zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l6.5-6.5zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="header-controls">
+                    <div class="provider-info">
+                        <span id="current-provider" class="badge bg-secondary">Ollama</span>
+                        <span id="current-model" class="badge bg-info">No model selected</span>
+                    </div>
+                    <button id="page-context-btn" class="btn btn-outline-primary btn-sm" title="Add Page Context">
+                        📄 Add Page
+                    </button>
+                </div>
+            </header>
+
+            <!-- Page Context Badge -->
+            <div id="page-context-badge" class="page-context-badge" style="display: none;">
+                <span class="badge bg-success">
+                    📄 Page context active
+                    <button id="clear-page-context-btn" class="btn-close btn-close-white ms-2" aria-label="Clear"></button>
+                </span>
+            </div>
+
+            <!-- Chat Messages Container -->
+            <div id="chat-container" class="chat-container">
+                <div id="chat-history" class="chat-history">
+                    <!-- Empty state -->
+                    <div id="empty-state" class="empty-state">
+                        <h2>👋 Welcome to AI Chat Assistant</h2>
+                        <p>Start a conversation or add page context to discuss the current webpage.</p>
+                        <div class="quick-actions">
+                            <button class="btn btn-outline-light" onclick="document.getElementById('user-input').focus()">
+                                Start Chatting
+                            </button>
+                            <button class="btn btn-outline-light" onclick="document.getElementById('page-context-btn').click()">
+                                Add Page Context
+                            </button>
                         </div>
                     </div>
+                </div>
+            </div>
 
-
-
-                    <div class="d-flex align-items-center mb-2">
-                        <label for="model-select" class="form-label me-2" style="font-size: smaller;">Model:</label>
-                        <select class="form-select" id="model-select" style="width: auto;"></select>
-                    </div>
-                    <div class="d-flex align-items-center">
-                        <label for="chat-select" class="form-label me-2" style="font-size: smaller;">History:</label>
-                        <select id="chat-select" class="form-select" style="width: auto;">
-                            <option value="" disabled selected>Select a chat</option>
-                        </select>
+            <!-- Input Area -->
+            <div id="input-area" class="input-area">
+                <div class="input-container">
+                    <textarea
+                        id="user-input"
+                        class="form-control"
+                        placeholder="Type your message... (Ctrl+Enter to send)"
+                        rows="3"></textarea>
+                    <div class="input-controls">
+                        <div class="input-info">
+                            <span id="char-count" class="text-muted small">0 chars</span>
+                        </div>
+                        <button id="send-button" class="btn btn-primary">
+                            Send
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                <path d="M15.854.146a.5.5 0 0 1 .11.54l-5.819 14.547a.75.75 0 0 1-1.329.124l-3.178-4.995L.643 7.184a.75.75 0 0 1 .124-1.33L15.314.037a.5.5 0 0 1 .54.11ZM6.636 10.07l2.761 4.338L14.13 2.576 6.636 10.07Zm6.787-8.201L1.591 6.602l4.339 2.76 7.494-7.493Z"/>
+                            </svg>
+                        </button>
                     </div>
                 </div>
             </div>
-        </div>
-        <div id="scroll-wrapper">
-            <div id="chat-container" class="card">
-                <div class="text-end">
-                    <button id="delete-chat" class="btn btn-danger" type="button">Delete Chat</button>
-                    <button id="save-chat" class="btn btn-secondary" type="button" data-bs-toggle="modal" data-bs-target="#nameModal">Save Chat</button>
+        </main>
+
+        <!-- Settings Panel (Off-canvas) -->
+        <div class="offcanvas offcanvas-end" tabindex="-1" id="settings-panel" aria-labelledby="settingsPanelLabel">
+            <div class="offcanvas-header">
+                <h5 class="offcanvas-title" id="settingsPanelLabel">⚙️ Settings</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+            </div>
+            <div class="offcanvas-body">
+                <!-- Provider Selection -->
+                <div class="settings-section">
+                    <h6>API Provider</h6>
+                    <select id="provider-select" class="form-select">
+                        <option value="ollama">Ollama (Local)</option>
+                        <option value="openrouter">OpenRouter</option>
+                    </select>
                 </div>
-                <div class="card-body">
-                    <div id="chat-history"></div>
+
+                <!-- Ollama Settings -->
+                <div id="ollama-settings" class="settings-section">
+                    <h6>Ollama Configuration</h6>
+                    <div class="mb-3">
+                        <label for="ollama-host" class="form-label">Host URL</label>
+                        <input type="text" id="ollama-host" class="form-control" placeholder="http://localhost:11434">
+                        <div class="form-text">Enter your Ollama server address</div>
+                    </div>
+                    <button id="test-ollama-btn" class="btn btn-outline-secondary btn-sm">Test Connection</button>
+                </div>
+
+                <!-- OpenRouter Settings -->
+                <div id="openrouter-settings" class="settings-section" style="display: none;">
+                    <h6>OpenRouter Configuration</h6>
+                    <div class="mb-3">
+                        <label for="openrouter-api-key" class="form-label">API Key</label>
+                        <input type="password" id="openrouter-api-key" class="form-control" placeholder="sk-or-...">
+                        <div class="form-text">Get your key at <a href="https://openrouter.ai/keys" target="_blank">openrouter.ai</a></div>
+                    </div>
+                    <button id="test-openrouter-btn" class="btn btn-outline-secondary btn-sm">Test Connection</button>
+                </div>
+
+                <!-- Model Selection -->
+                <div class="settings-section">
+                    <h6>Model</h6>
+                    <select id="model-select" class="form-select">
+                        <option value="">Loading models...</option>
+                    </select>
+                    <div id="model-info" class="form-text mt-2"></div>
+                </div>
+
+                <!-- Model Parameters -->
+                <div class="settings-section">
+                    <h6>Model Parameters</h6>
+
+                    <div class="mb-3">
+                        <label for="temperature-slider" class="form-label">
+                            Temperature: <span id="temperature-value">0.7</span>
+                        </label>
+                        <input type="range" class="form-range" id="temperature-slider" min="0" max="2" step="0.1" value="0.7">
+                        <div class="form-text">Higher = more creative, Lower = more focused</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="top-p-slider" class="form-label">
+                            Top P: <span id="top-p-value">0.9</span>
+                        </label>
+                        <input type="range" class="form-range" id="top-p-slider" min="0" max="1" step="0.05" value="0.9">
+                        <div class="form-text">Nucleus sampling threshold</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="max-tokens-input" class="form-label">Max Tokens</label>
+                        <input type="number" id="max-tokens-input" class="form-control" value="2048" min="1" max="32000">
+                        <div class="form-text">Maximum response length</div>
+                    </div>
+                </div>
+
+                <!-- System Prompt -->
+                <div class="settings-section">
+                    <h6>System Prompt</h6>
+                    <textarea id="system-prompt-input" class="form-control" rows="4"
+                        placeholder="You are a helpful assistant..."></textarea>
+                    <div class="form-text">Optional instructions for the AI</div>
+                </div>
+
+                <!-- Data Management -->
+                <div class="settings-section">
+                    <h6>Data Management</h6>
+                    <div class="d-grid gap-2">
+                        <button id="export-data-btn" class="btn btn-outline-secondary btn-sm">Export All Data</button>
+                        <button id="import-data-btn" class="btn btn-outline-secondary btn-sm">Import Data</button>
+                        <button id="clear-data-btn" class="btn btn-outline-danger btn-sm">Clear All Data</button>
+                    </div>
+                </div>
+
+                <!-- About -->
+                <div class="settings-section">
+                    <h6>About</h6>
+                    <p class="small text-muted">
+                        AI Chat Assistant v2.0.0<br>
+                        Multi-provider AI chat extension with page context support.
+                    </p>
                 </div>
             </div>
         </div>
     </div>
-    <div class="container p-2 card" id="input-area">
-        <div class="input-group">
-            <textarea class="form-control" id="user-input" placeholder="Type your question here..."></textarea>
-            <button id="send-button" class="btn btn-primary">Send</button>
+
+    <!-- Modals -->
+
+    <!-- Error Modal -->
+    <div class="modal fade" id="error-modal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Error</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="error-message"></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
         </div>
     </div>
 
-<!-- Modal -->
-<div class="modal fade" id="nameModal" tabindex="-1" aria-labelledby="nameModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="nameModalLabel">Enter Your Name</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    <!-- Edit Title Modal -->
+    <div class="modal fade" id="edit-title-modal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Conversation Title</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="text" id="new-title-input" class="form-control" placeholder="Enter new title">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="save-title-btn">Save</button>
+                </div>
+            </div>
         </div>
-        <div class="modal-body">
-          <input type="text" class="form-control" id="userName" placeholder="Your Name">
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-          <button type="button" class="btn btn-primary" id="saveName">Save</button>
-        </div>
-      </div>
     </div>
-  </div>
 
-  <div class="modal fade" id="errorModal" tabindex="-1">
-    <div class="modal-dialog modal-xl">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Unable to access Ollama server</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-          <p id="errorText"></p>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <script src="api.js"></script>
-  <script src="chat.js"></script>
-
+    <!-- Scripts -->
+    <script type="module" src="src/ui/app.js"></script>
 </body>
-
 </html>
