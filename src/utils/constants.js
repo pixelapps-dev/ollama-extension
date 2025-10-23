@@ -18,6 +18,7 @@ export const PROVIDERS = {
  */
 export const DEFAULT_CONFIG = {
   provider: PROVIDERS.OLLAMA,
+  currentModel: '',
   ollama: {
     host: 'http://localhost:11434'
   },

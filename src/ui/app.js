@@ -127,10 +127,10 @@ async function initialize() {
   // Check for pending prompts/context from background.js (context menu)
   await handlePendingActions();
 
-  // Show onboarding for first-time users
-  if (needsOnboarding()) {
-    setTimeout(() => showWelcomeScreen(), 1000);
-  }
+  // Onboarding disabled for now - was interfering with basic functionality
+  // if (needsOnboarding()) {
+  //   setTimeout(() => showWelcomeScreen(), 1000);
+  // }
 
   console.log('Application initialized');
 }
@@ -143,6 +143,7 @@ function setupEventListeners() {
   document.getElementById('new-chat-btn').addEventListener('click', handleNewChat);
   document.getElementById('toggle-sidebar-btn').addEventListener('click', toggleSidebar);
   document.getElementById('conversation-search').addEventListener('input', handleConversationSearch);
+  document.getElementById('sidebar-page-context-btn').addEventListener('click', handleAddPageContext);
 
   // Settings
   document.getElementById('settings-btn').addEventListener('click', openSettings);
@@ -199,24 +200,21 @@ function loadActiveConversation() {
  */
 function displayConversation(conversation) {
   const chatHistory = document.getElementById('chat-history');
-  const emptyStateOld = document.getElementById('empty-state');
+  const emptyState = document.getElementById('empty-state');
 
   if (!conversation || conversation.messages.length === 0) {
-    // Hide old empty state
-    if (emptyStateOld) emptyStateOld.style.display = 'none';
-
-    // Create and show enhanced empty state
+    // Show simple empty state
     chatHistory.innerHTML = '';
-    const enhancedEmpty = createChatEmptyState();
-    chatHistory.appendChild(enhancedEmpty);
-
-    // Attach event listeners to empty state buttons
-    attachEmptyStateListeners();
+    if (emptyState) {
+      emptyState.style.display = 'flex';
+    }
     return;
   }
 
-  // Hide old empty state
-  if (emptyStateOld) emptyStateOld.style.display = 'none';
+  // Hide empty state
+  if (emptyState) {
+    emptyState.style.display = 'none';
+  }
 
   chatHistory.innerHTML = '';
 
@@ -231,12 +229,11 @@ function displayConversation(conversation) {
 function appendMessage(role, content, isNew = true, messageIndex = -1) {
   const chatHistory = document.getElementById('chat-history');
   const emptyState = document.getElementById('empty-state');
-  const emptyStateOld = document.getElementById('empty-state');
-  if (emptyStateOld) emptyStateOld.style.display = 'none';
 
-  // Remove enhanced empty state if present
-  const enhancedEmpty = chatHistory.querySelector('.empty-state-enhanced');
-  if (enhancedEmpty) enhancedEmpty.remove();
+  // Hide empty state when first message is added
+  if (emptyState) {
+    emptyState.style.display = 'none';
+  }
 
   const messageDiv = document.createElement('div');
   messageDiv.className = `message ${role}`;
